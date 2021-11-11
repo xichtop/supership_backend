@@ -103,14 +103,9 @@ class DeliveryController {
 
     async statistic(req, res) {
         const { FirstDate, LastDate, StoreId } = req.body;
-        var query = `Select A.Status, ISNULL(Mount, 0) as Mount 
-                     From ( Select Status from Deliveries group by Status) as A
-                     LEFT JOIN
-                        ( select Status, COUNT(Status) as Mount
-                          From Deliveries where OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}' and StoreId = '${StoreId}' 
-                          Group by Status) as B
-                     On A.Status = B.Status
-                     Order by Status DESC`;
+        var query = `select Status, COUNT(Status) as Mount
+                    From Deliveries where OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}' and StoreId = '${StoreId}' 
+                    Group by Status`;
         try {
             let pool = await sql.connect(config)
             let result = await pool.request()
@@ -118,7 +113,7 @@ class DeliveryController {
             console.log(result);
             res.json(result.recordsets[0]);
         } catch (err) {
-
+            console.log(err);
         }
     }
 
@@ -143,12 +138,12 @@ class DeliveryController {
     }
 
     async addItem(req, res) {
-        const { StoreId, RecieverPhone, RecieverName, ProvinceCode, DistrictCode, WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodType } = req.body;
+        const { StoreId, RecieverPhone, RecieverName, ProvinceCode, DistrictCode, WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodSize, GoodType } = req.body;
         const query = `INSERT INTO Deliveries(StoreId, RecieverPhone, RecieverName, ProvinceCode, DistrictCode, 
-                        WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodType, OrderDate, Status)
+                        WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodSize, GoodType, OrderDate, Status)
                         VALUES('${StoreId}', '${RecieverPhone}', N'${RecieverName}', '${ProvinceCode}', '${DistrictCode}', 
                         '${WardCode}', N'${AddressDetail}', '${Picture}', ${COD}, N'${ShipType}', N'${GoodName}', 
-                        ${GoodWeight}, N'${GoodType}', getDate(), 'Ordered')`
+                        '${GoodWeight}', '${GoodSize}', N'${GoodType}', getDate(), 'Ordered')`
         var status = 0;
         try {
             let pool = await sql.connect(config)

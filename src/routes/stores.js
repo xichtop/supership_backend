@@ -5,6 +5,10 @@ const verifyToken = require('../middleware/verifyToken');
 
 router.use('/login', storeController.login);
 
+router.use('/check/:username', storeController.check);
+
+router.use('/additem', storeController.addItem);
+
 router.use('/', storeController.index);
 
 module.exports = router;
