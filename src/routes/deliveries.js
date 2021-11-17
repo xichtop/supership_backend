@@ -13,6 +13,8 @@ router.use('/getbystore/:storeId', DeliveryController.getByStore);
 
 router.use('/getbyid/:deliveryId', verifyToken, DeliveryController.getById);
 
+router.use('/getbyidshipper/:deliveryId', verifyToken, DeliveryController.getByIdShipper);
+
 router.use('/update', verifyToken, DeliveryController.updateStatus);
 
 router.use('/statistic', verifyToken, DeliveryController.statistic);

@@ -51,6 +51,69 @@ class DeliveryController {
         res.json(newDelivery);
     }
 
+    // Lấy đơn hàng chi tiết dành cho shipper
+    async getByIdShipper(req, res) {
+        var query = `select * from Deliveries where DeliveryId = ${req.params.deliveryId}`;
+        var delivery = {};
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            delivery = result.recordsets[0][0]
+        } catch (err) {
+
+        }
+
+        var query2 = `select WardName from Wards where WardCode = '${delivery.WardCode}'`;
+        var query3 = `select DistrictName from Districts where DistrictCode = '${delivery.DistrictCode}'`;
+        var query4 = `select ProvinceName from Provinces where ProvinceCode = '${delivery.ProvinceCode}'`;
+        var query5 = `select * From Stores Where StoreId = '${delivery.StoreId}'`;
+        var WardName, DistrictName, ProvinceName = '';
+        var store = {};
+        try {
+            let pool = await sql.connect(config)
+            let result1 = await pool.request().query(query2)
+            let result2 = await pool.request().query(query3)
+            let result3 = await pool.request().query(query4)
+            let result4 = await pool.request().query(query5)
+            WardName = result1.recordsets[0][0].WardName;
+            DistrictName = result2.recordsets[0][0].DistrictName;
+            ProvinceName = result3.recordsets[0][0].ProvinceName;
+            store = result4.recordsets[0][0];
+        } catch (err) {
+
+        }
+
+        var WardNameStore, ProvinceNameStore, DistrictNameStore = '';
+        var query6 = `select WardName from Wards where WardCode = '${store.WardCode}'`;
+        var query7 = `select DistrictName from Districts where DistrictCode = '${store.DistrictCode}'`;
+        var query8 = `select ProvinceName from Provinces where ProvinceCode = '${store.ProvinceCode}'`;
+        try {
+            let pool = await sql.connect(config)
+            let result1 = await pool.request().query(query6)
+            let result2 = await pool.request().query(query7)
+            let result3 = await pool.request().query(query8)
+            WardNameStore = result1.recordsets[0][0].WardName;
+            ProvinceNameStore = result2.recordsets[0][0].DistrictName;
+            DistrictNameStore = result3.recordsets[0][0].ProvinceName;
+        } catch (err) {
+
+        }
+        const newDelivery = {
+            ...delivery,
+            WardName
+            , DistrictName,
+            ProvinceName,
+            WardNameStore,
+            ProvinceNameStore,
+            DistrictNameStore,
+            StoreName: store.StoreName,
+            StorePhone: store.Phone,
+            StoreAddress: store.AddressDetail,
+        }
+        res.json(newDelivery);
+    }
+
     async getByStore(req, res) {
         var query = `select * from Deliveries where StoreId = '${req.params.storeId}'`;
         try {
@@ -273,7 +336,7 @@ class DeliveryController {
             const store = stores.find(item => item.StoreId === delivery.StoreId);
             return districttemps.includes(store.DistrictCode);
         }
-        const deliveriesTemp =  deliveries.filter(checkDistrict);
+        const deliveriesTemp = deliveries.filter(checkDistrict);
         var temp = [];
         if (deliveriesTemp.length === 0) {
             res.json(temp);
@@ -348,7 +411,7 @@ class DeliveryController {
         function checkDistrict(delivery) {
             return districttemps.includes(delivery.DistrictCode);
         }
-        const deliveriesTemp1 =  deliveries.filter(checkDistrict);
+        const deliveriesTemp1 = deliveries.filter(checkDistrict);
         var temp = [];
         if (deliveriesTemp1.length === 0) {
             res.json(temp);
