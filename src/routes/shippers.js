@@ -5,10 +5,12 @@ const verifyToken = require('../middleware/verifyToken');
 
 router.use('/login', ShipperController.login);
 
+router.use('/updatestatus', verifyToken, ShipperController.updateStatus);
+
 // router.use('/check/:username', ShipperController.check);
 
 // router.use('/additem', ShipperController.addItem);
 
-router.use('/', ShipperController.index);
+router.use('/', verifyToken, ShipperController.index);
 
 module.exports = router;

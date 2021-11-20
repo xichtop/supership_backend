@@ -3,8 +3,29 @@ var config = require("../config/config");
 
 class DeliveryController {
     // [GET] /new
+    // async index(req, res) {
+    //     var query = `select * from Deliveries`;
+    //     try {
+    //         let pool = await sql.connect(config)
+    //         let result = await pool.request()
+    //             .query(query)
+    //         res.json(result.recordsets[0]);
+    //     } catch (err) {
+
+    //     }
+    // }
+
+    //admin get all deliveries
     async index(req, res) {
-        var query = `select * from Deliveries`;
+        var query = `select Deliveries.*, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName 
+                     From Deliveries
+                     Left Join Provinces 
+                     on Deliveries.ProvinceCode = Provinces.ProvinceCode
+                     Left Join Districts 
+                     on Deliveries.DistrictCode = Districts.DistrictCode
+                     Left Join Wards 
+                     on Deliveries.WardCode = Wards.WardCode
+                     Order By DeliveryId DESC`;
         try {
             let pool = await sql.connect(config)
             let result = await pool.request()

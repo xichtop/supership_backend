@@ -6,15 +6,28 @@ var md5 = require('md5');
 
 class StoreController {
     // [GET] /new
+
+    //admin get all strores
     async index(req, res) {
-        var query = `select * from Stores`;
+        var query = `Select Stores.*, Banks.BankBranch, Banks.BankName, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName, Identities.Fullname, Identities.BirthDay, Identities.Sex, Identities.GetDate
+                     from Stores
+                     Left Join Banks 
+                     on Stores.AccountBank = Banks.AccountBank
+                     Left Join Identities 
+                     on Stores.IdentityId = Identities.IdentityId
+                     Left Join Provinces 
+                     on Stores.ProvinceCode = Provinces.ProvinceCode
+                     Left Join Districts 
+                     on Stores.DistrictCode = Districts.DistrictCode
+                     Left Join Wards 
+                     on Stores.WardCode = Wards.WardCode`;
         try {
             let pool = await sql.connect(config)
             let result = await pool.request()
                 .query(query)
             res.json(result.recordsets[0]);
         } catch (err) {
-
+            console.error(err);
         }
     }
 
@@ -26,7 +39,28 @@ class StoreController {
                 .query(query)
             res.json(result.recordsets[0]);
         } catch (err) {
+            console.error(err);
+        }
+    }
 
+    //admin update status
+    async updateStatus (req, res) {
+        const { newStatus, StoreId } = req.body;
+        const query = `Update Stores Set Status = '${newStatus}' Where StoreId = '${StoreId}'`;
+        var status = 0;
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            status = result;
+        } catch (err) {
+            console.log(err);
+        }
+        if (status != 0) {
+            res.send({ successful: true, message: 'Cập nhật cửa hàng thành công!', status: status });
+        }
+        else {
+            res.send({ successful: false, message: 'Cập nhật cửa hàng thất bại!', status: status });
         }
     }
 
@@ -35,7 +69,7 @@ class StoreController {
         console.log(username, password);
         // const newPass = md5(password);
         var query = `select * from Accounts where Username = '${username}' and Password = '${password}' and Role = 'Store'`;
-        var query2 = `select * from Stores where Username = '${username}' and Status != 'Locked'`;
+        var query2 = `select * from Stores where Username = '${username}' and Status != 'Off'`;
         var resultData1, resultData2 = [];
         try {
             let pool = await sql.connect(config)

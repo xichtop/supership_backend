@@ -9,6 +9,8 @@ router.use('/check/:username', storeController.check);
 
 router.use('/additem', storeController.addItem);
 
-router.use('/', storeController.index);
+router.use('/updatestatus', verifyToken, storeController.updateStatus);
+
+router.use('/', verifyToken, storeController.index);
 
 module.exports = router;

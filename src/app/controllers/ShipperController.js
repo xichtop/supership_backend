@@ -4,17 +4,47 @@ var config = require("../config/config");
 const jwt = require('jsonwebtoken');
 var md5 = require('md5');
 
-class StoreController {
+class ShipperController {
     // [GET] /new
+
+    //admin get all shippers
     async index(req, res) {
-        var query = `select * from Staffs where Role = 'Shipper`;
+        var query = `Select Staffs.*, Banks.BankBranch, Banks.BankName, Identities.Fullname, Identities.BirthDay, Identities.Sex, Identities.GetDate
+                     from Staffs
+                     Left Join Banks 
+                     on Staffs.AccountBank = Banks.AccountBank
+                     Left Join Identities 
+                     on Staffs.IdentityId = Identities.IdentityId
+                     Where Staffs.Role = 'Shipper'`;
         try {
             let pool = await sql.connect(config)
             let result = await pool.request()
                 .query(query)
             res.json(result.recordsets[0]);
         } catch (err) {
-            console.log(err)
+            console.error(err);
+        }
+    }
+
+    //admin update status
+    async updateStatus (req, res) {
+        const { newStatus, StaffId } = req.body;
+        const query = `Update Staffs Set Status = '${newStatus}' Where StaffId = '${StaffId}'`;
+        console.log(req.body)
+        var status = 0;
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            status = result;
+        } catch (err) {
+            console.log(err);
+        }
+        if (status != 0) {
+            res.send({ successful: true, message: 'Cập nhật nhân viên thành công!', status: status });
+        }
+        else {
+            res.send({ successful: false, message: 'Cập nhật nhân viên thất bại!', status: status });
         }
     }
 
@@ -35,7 +65,7 @@ class StoreController {
         console.log(username, password);
         // const newPass = md5(password);
         var query = `select * from Accounts where Username = '${username}' and Password = '${password}' and Role = 'Shipper'`;
-        var query2 = `select * from Staffs where Username = '${username}' and Status != 'Locked'`;
+        var query2 = `select * from Staffs where Username = '${username}' and Status != 'Off'`;
         var resultData1, resultData2 = [];
         try {
             let pool = await sql.connect(config)
@@ -171,4 +201,4 @@ class StoreController {
     // }
 }
 
-module.exports = new StoreController();
+module.exports = new ShipperController();

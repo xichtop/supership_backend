@@ -7,6 +7,7 @@ const districtsRouter = require('./districts');
 const wardsRouter = require('./wards');
 const paymentsRouter = require('./payments');
 const shipareaRouter = require('./shiparea');
+const wareRouter = require('./ware');
 const coordinationRouter = require('./coordinations');
 
 function route(app) {
@@ -20,6 +21,7 @@ function route(app) {
     app.use('/coordinations/', coordinationRouter);
     app.use('/payments/', paymentsRouter);
     app.use('/shiparea/', shipareaRouter);
+    app.use('/ware/', wareRouter);
 }
 
 module.exports = route;
