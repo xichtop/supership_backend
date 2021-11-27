@@ -439,17 +439,11 @@ class DeliveryController {
         } else {
             function checkStatus(delivery) {
                 const coor = coors.find(item => item.DeliveryId === delivery.DeliveryId);
-                console.log(coor);
                 if (coor === undefined) {
                     return false;
                 } else {
                     return true;
                 }
-                // if (coor.Status === 'Da ve kho') {
-                //     return true;
-                // } else {
-                //     return false;
-                // }
             }
             const deliveriesTemp2 = deliveriesTemp1.filter(checkStatus);
             if (deliveriesTemp2.length === 0) {

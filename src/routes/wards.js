@@ -5,6 +5,8 @@ const verifyToken = require('../middleware/verifyToken');
 
 router.use('/getByDistrict/:districtid', WardController.getByDistrict);
 
+router.use('/getfeeship', WardController.getFeeShip);
+
 router.use('/', WardController.index);
 
 module.exports = router;

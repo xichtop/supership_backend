@@ -111,11 +111,19 @@ class CoordinationController {
         const { DeliveryId, StaffId } = req.body;
 
         var deliveryQuery = `Update Deliveries Set Status = 'Delivered' Where DeliveryId = '${DeliveryId}'`;
-        var coordinationQuery = `Update Coordinations Set Status = 'Da giao hang' Where StaffId1 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
+        var coordinationQuery = `Update Coordinations 
+                                 Set Status = 'Da giao hang', DeliveryDate = getDate() 
+                                 Where StaffId1 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
+
+        var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
+
+        var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
 
         var listQuery = [];
         listQuery.push(deliveryQuery);
         listQuery.push(coordinationQuery);
+        listQuery.push(paymentQuery);
+        listQuery.push(feePaymentQuery);
         const pool = new sql.ConnectionPool(config)
         pool.connect(err => {
             if (err) console.log(err)
@@ -153,12 +161,20 @@ class CoordinationController {
         var listQuery = [];
         if (Status === 'Order') {
             coordinationQuery = `Update Coordinations Set Status = 'Dang ve kho' Where StaffId1 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
+            var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
+            var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
             listQuery.push(coordinationQuery);
+            listQuery.push(paymentQuery);
+            listQuery.push(feePaymentQuery);
         } else {
             deliveryQuery = `Update Deliveries Set Status = 'Delivered' Where DeliveryId = '${DeliveryId}'`;
             coordinationQuery = `Update Coordinations Set Status = 'Da giao hang' Where StaffId2 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
+            var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
+            var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
             listQuery.push(deliveryQuery);
             listQuery.push(coordinationQuery);
+            listQuery.push(paymentQuery);
+            listQuery.push(feePaymentQuery);
         }
         const pool = new sql.ConnectionPool(config)
         pool.connect(err => {
@@ -194,7 +210,7 @@ class CoordinationController {
     // lấy danh sách các đơn hàng nhanh đã tiếp nhận của shipper 
     async getFastShip(req, res) {
         const staffId = req.params.staffId;
-        var query = `Select Deliveries.*, Coor.DeliveryDate from ( 
+        var query = `Select Deliveries.*, Coor.DeliveryDate from (
                         Select DeliveryId, DeliveryDate from Coordinations 
                         where StaffId1 = '${staffId}' and  WareHouseId IS NULL ) Coor
                     Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
@@ -262,11 +278,11 @@ class CoordinationController {
                 Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
                 Order By DeliveryDate DESC`;
         } else {
-            query = `Select Deliveries.*, Coor.DeliveryDate2, Coor.Status as StatusDetail from ( 
+            query = `Select Deliveries.*, Coor.DeliveryDate2 as DeliveryDate, Coor.Status as StatusDetail from ( 
                 Select DeliveryId, DeliveryDate2, Status from Coordinations 
                 where StaffId2 = '${staffId}') Coor
                 Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
-                Order By DeliveryDate2 DESC`;
+                Order By DeliveryDate DESC`;
         }
         var query2 = `select * from Provinces`;
         var query3 = `select * from Districts`;

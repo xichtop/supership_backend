@@ -1,5 +1,7 @@
 var sql = require("mssql");
 var config = require("../config/config");
+var getFee = require('../utils/getFeeShip');
+
 
 class WardController {
     // [GET] /new
@@ -27,6 +29,15 @@ class WardController {
         } catch (err) {
 
         }
+    }
+
+    async getFeeShip (req, res) {
+        const { DeliveryId, StoreId } = req.body;
+        const fee = await getFee(DeliveryId, StoreId);
+        res.json({ 
+            fee: fee,
+        })
+
     }
 }
 

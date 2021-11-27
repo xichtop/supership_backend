@@ -11,9 +11,9 @@ router.use('/updatefastitem/', verifyToken, CoordinationController.updateFastIte
 
 router.use('/updatestandarditem/', verifyToken, CoordinationController.updateStandardItem);
 
-router.use('/getfastship/:staffId', verifyToken, CoordinationController.getFastShip);
-
 router.use('/getstandardship/:staffId/:status', verifyToken, CoordinationController.getStandardShip);
+
+router.use('/getfastship/:staffId', verifyToken, CoordinationController.getFastShip);
 
 router.use('/', CoordinationController.index);
 
