@@ -1,12 +1,13 @@
 var sql = require("mssql");
 var config = require("../config/config");
 var async = require('async');
-var getFee = require('../utils/getFeeShip');
 
 class FeeShipController {
     // [GET] /new
+
+    // Admin lấy danh sách phí ship của hệ thống
     async getAll(req, res) {
-        const query1 = `Select Deliveries.StoreId, Deliveries.OrderDate, Deliveries.ShipType, Coordinations.*, FeeShip_Payments.StaffId, FeeShip_Payments.Money1
+        const query1 = `Select Deliveries.StoreId, Deliveries.OrderDate, Deliveries.ShipType, Deliveries.FeeShip, Coordinations.*, FeeShip_Payments.StaffId, FeeShip_Payments.Money1
                         From Deliveries
                         Left Join Coordinations
                         On Deliveries.DeliveryId = Coordinations.DeliveryId
@@ -26,7 +27,6 @@ class FeeShipController {
         let temp = [];
         var index = 0;
         for (let i = 0; i < deliveries.length; i++) {
-            const fee = await getFee(deliveries[i].DeliveryId, deliveries[i].StoreId);
 
             if (deliveries[i].ShipType === 'Giao hàng nhanh') {
                 if (deliveries[i].StaffId === null) {
@@ -36,8 +36,8 @@ class FeeShipController {
                         OrderDate: deliveries[i].OrderDate,
                         ShipType: 'Giao hàng nhanh',
                         StaffId: deliveries[i].StaffId1,
-                        FeeShip: fee * 1000,
-                        FeePay: (fee * 1000) * 15 / 100,
+                        FeeShip: deliveries[i].FeeShip,
+                        FeePay: (deliveries[i].FeeShip) * 15 / 100,
                         Status: 'Chưa thanh toán'
                     })
                     index++;
@@ -48,8 +48,8 @@ class FeeShipController {
                         OrderDate: deliveries[i].OrderDate,
                         ShipType: 'Giao hàng nhanh',
                         StaffId: deliveries[i].StaffId1,
-                        FeeShip: fee * 1000,
-                        FeePay: (fee * 1000) * 15 / 100,
+                        FeeShip: deliveries[i].FeeShip,
+                        FeePay: (deliveries[i].FeeShip) * 15 / 100,
                         Status: 'Đã thanh toán'
                     })
                     index++;
@@ -62,8 +62,8 @@ class FeeShipController {
                         OrderDate: deliveries[i].OrderDate,
                         ShipType: 'Giao hàng tiêu chuẩn',
                         StaffId: deliveries[i].StaffId1,
-                        FeeShip: fee * 1000,
-                        FeePay: (fee * 1000) * 10 / 100,
+                        FeeShip: deliveries[i].FeeShip,
+                        FeePay: (deliveries[i].FeeShip) * 10 / 100,
                         Status: 'Chưa thanh toán'
                     })
                     index++;
@@ -73,8 +73,8 @@ class FeeShipController {
                         OrderDate: deliveries[i].OrderDate,
                         ShipType: 'Giao hàng tiêu chuẩn',
                         StaffId: deliveries[i].StaffId2,
-                        FeeShip: fee * 1000,
-                        FeePay: (fee * 1000) * 10 / 100,
+                        FeeShip: deliveries[i].FeeShip,
+                        FeePay: (deliveries[i].FeeShip) * 10 / 100,
                         Status: 'Chưa thanh toán'
                     })
                     index++;
@@ -85,8 +85,8 @@ class FeeShipController {
                         OrderDate: deliveries[i].OrderDate,
                         ShipType: 'Giao hàng tiêu chuẩn',
                         StaffId: deliveries[i].StaffId1,
-                        FeeShip: fee * 1000,
-                        FeePay: (fee * 1000) * 10 / 100,
+                        FeeShip: deliveries[i].FeeShip,
+                        FeePay: (deliveries[i].FeeShip) * 10 / 100,
                         Status: 'Đã thanh toán'
                     })
                     index++;
@@ -96,8 +96,8 @@ class FeeShipController {
                         OrderDate: deliveries[i].OrderDate,
                         ShipType: 'Giao hàng tiêu chuẩn',
                         StaffId: deliveries[i].StaffId2,
-                        FeeShip: fee * 1000,
-                        FeePay: (fee * 1000) * 10 / 100,
+                        FeeShip: deliveries[i].FeeShip,
+                        FeePay: (deliveries[i].FeeShip) * 10 / 100,
                         Status: 'Đã thanh toán'
                     })
                     index++;
@@ -216,9 +216,55 @@ class FeeShipController {
         })
     }
 
-    //Cửa hàng lấy danh sách phí shipper
+    //Cửa hàng lấy danh sách phí ship
     async getAllByStore(req, res) {
         const StoreId = req.params.storeId
+        const query1 = `Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Deliveries.FeeShip, Coordinations.DeliveryDate2 as ShipDate, FeeShip_Payments.StoreId as StorePay, FeeShip_Payments.Money2
+                        From Deliveries
+                        Left Join Coordinations
+                        On Deliveries.DeliveryId = Coordinations.DeliveryId
+                        Left Join FeeShip_Payments
+                        On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId
+                        Where Deliveries.Status = 'Delivered' and Deliveries.StoreId = '${StoreId}'
+                        Order By Deliveries.OrderDate DESC`;
+        var deliveries = [];
+        try {
+            let pool = await sql.connect(config)
+            let result1 = await pool.request()
+                .query(query1)
+            deliveries = result1.recordsets[0];
+        } catch (err) {
+            console.log(err);
+        }
+        let temp = [];
+        for (let i = 0; i < deliveries.length; i++) {
+
+            if (deliveries[i].StorePay === null) {
+                temp.push({
+                    DeliveryId: deliveries[i].DeliveryId,
+                    OrderDate: deliveries[i].OrderDate,
+                    DeliveryDate: deliveries[i].ShipDate,
+                    FeeShip: deliveries[i].FeeShip,
+                    Status: 'Chưa thanh toán'
+                })
+            } else {
+                temp.push({
+                    DeliveryId: deliveries[i].DeliveryId,
+                    OrderDate: deliveries[i].OrderDate,
+                    DeliveryDate: deliveries[i].ShipDate,
+                    FeeShip: deliveries[i].FeeShip,
+                    Status: 'Đã thanh toán'
+                })
+            }
+        }
+        res.json(temp);
+    }
+
+    //Shipper lấy danh sách phí ship
+    async getAllByStaff(req, res) {
+        
+        const {FirstDate, LastDate, StaffId } = req.body;
+
         const query1 = `Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Coordinations.DeliveryDate2 as ShipDate, FeeShip_Payments.StoreId as StorePay, FeeShip_Payments.Money2
                         From Deliveries
                         Left Join Coordinations
@@ -238,14 +284,13 @@ class FeeShipController {
         }
         let temp = [];
         for (let i = 0; i < deliveries.length; i++) {
-            const fee = await getFee(deliveries[i].DeliveryId, deliveries[i].StoreId);
 
             if (deliveries[i].StorePay === null) {
                 temp.push({
                     DeliveryId: deliveries[i].DeliveryId,
                     OrderDate: deliveries[i].OrderDate,
                     DeliveryDate: deliveries[i].ShipDate,
-                    FeeShip: fee * 1000,
+                    FeeShip: deliveries[i].FeeShip,
                     Status: 'Chưa thanh toán'
                 })
             } else {
@@ -253,7 +298,7 @@ class FeeShipController {
                     DeliveryId: deliveries[i].DeliveryId,
                     OrderDate: deliveries[i].OrderDate,
                     DeliveryDate: deliveries[i].ShipDate,
-                    FeeShip: fee * 1000,
+                    FeeShip: deliveries[i].FeeShip,
                     Status: 'Đã thanh toán'
                 })
             }

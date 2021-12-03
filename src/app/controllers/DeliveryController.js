@@ -1,19 +1,8 @@
 var sql = require("mssql");
 var config = require("../config/config");
+var getFee = require('../utils/getFeeShip');
 
 class DeliveryController {
-    // [GET] /new
-    // async index(req, res) {
-    //     var query = `select * from Deliveries`;
-    //     try {
-    //         let pool = await sql.connect(config)
-    //         let result = await pool.request()
-    //             .query(query)
-    //         res.json(result.recordsets[0]);
-    //     } catch (err) {
-
-    //     }
-    // }
 
     //admin get all deliveries
     async index(req, res) {
@@ -223,11 +212,22 @@ class DeliveryController {
 
     async addItem(req, res) {
         const { StoreId, RecieverPhone, RecieverName, ProvinceCode, DistrictCode, WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodSize, GoodType } = req.body;
+        const Reciever = {
+            AddressDetail: AddressDetail,
+            ProvinceCode: ProvinceCode,
+            DistrictCode: DistrictCode,
+            WardCode: WardCode,
+            GoodSize: GoodSize,
+            GoodWeight: GoodWeight,
+            ShipType: ShipType,
+        }
+        const feeship = await getFee(Reciever, StoreId);
+
         const query = `INSERT INTO Deliveries(StoreId, RecieverPhone, RecieverName, ProvinceCode, DistrictCode, 
-                        WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodSize, GoodType, OrderDate, Status)
+                        WardCode, AddressDetail, Picture, COD, ShipType, GoodName, GoodWeight, GoodSize, GoodType, OrderDate, Status, FeeShip)
                         VALUES('${StoreId}', '${RecieverPhone}', N'${RecieverName}', '${ProvinceCode}', '${DistrictCode}', 
                         '${WardCode}', N'${AddressDetail}', '${Picture}', ${COD}, N'${ShipType}', N'${GoodName}', 
-                        '${GoodWeight}', '${GoodSize}', N'${GoodType}', getDate(), 'Ordered')`
+                        '${GoodWeight}', '${GoodSize}', N'${GoodType}', getDate(), 'Ordered', ${feeship})`
         var status = 0;
         try {
             let pool = await sql.connect(config)

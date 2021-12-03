@@ -1,8 +1,6 @@
 var sql = require("mssql");
 var async = require('async');
 var config = require("../config/config");
-var getFee = require('../utils/getFeeShip');
-var getFeeList = require('../utils/getFeeShipForList');
 
 class PaymentController {
     // [GET] /new
@@ -312,15 +310,10 @@ class PaymentController {
         }
         let temp = [];
 
-        // const tempFees = await getFeeList(deliveries);
-        // console.log(tempFees);
-
         for (let i = 0; i < deliveries.length; i++) {
-            const fee =  await getFee(deliveries[i].DeliveryId, deliveries[i].StoreId);
             if (parseInt(deliveries[i].COD) === 0) {
                 temp.push({
                     ...deliveries[i],
-                    FeeShip: fee * 1000,
                     Status: 'Đã thanh toán'
                 })
             } else {
@@ -328,13 +321,11 @@ class PaymentController {
                 if (index !== -1 && payments[index].StaffId2 !== null) {
                     temp.push({
                         ...deliveries[i],
-                        FeeShip: fee * 1000,
                         Status: 'Đã thanh toán'
                     })
                 } else {
                     temp.push({
                         ...deliveries[i],
-                        FeeShip: fee * 1000,
                         Status: 'Chưa thanh toán'
                     })
                 }

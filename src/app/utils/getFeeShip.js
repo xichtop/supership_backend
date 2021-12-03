@@ -2,17 +2,8 @@ var sql = require("mssql");
 var config = require("../config/config");
 var axios = require("axios");
 
-const getFeeShip = async (DeliveryId, StoreId) => {
-    var query = `select Deliveries.*, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName 
-                     From Deliveries
-                     Left Join Provinces 
-                     on Deliveries.ProvinceCode = Provinces.ProvinceCode
-                     Left Join Districts 
-                     on Deliveries.DistrictCode = Districts.DistrictCode
-                     Left Join Wards 
-                     on Deliveries.WardCode = Wards.WardCode
-                     Where DeliveryId = '${DeliveryId}'`;
-    var query2 = `select Stores.*, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName 
+const getFeeShip = async (Reciever, StoreId) => {
+    var query = `select Stores.*, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName 
                      From Stores
                      Left Join Provinces 
                      on Stores.ProvinceCode = Provinces.ProvinceCode
@@ -21,25 +12,34 @@ const getFeeShip = async (DeliveryId, StoreId) => {
                      Left Join Wards 
                      on Stores.WardCode = Wards.WardCode
                      Where StoreId = '${StoreId}'`;
+    var query2 = `select * from Wards where WardCode = '${Reciever.WardCode}'`;
+    var query3 = `select * from Districts where DistrictCode = '${Reciever.DistrictCode}'`;
+    var query4 = `select * from Provinces where ProvinceCode = '${Reciever.ProvinceCode}'`;
 
     var Store = {};
-    var Delivery = {};
+    var Ward = {};
+    var District = {};
+    var Province = {};
     try {
         let pool = await sql.connect(config)
         let result1 = await pool.request().query(query)
         let result2 = await pool.request().query(query2)
-        Delivery = result1.recordsets[0][0];
-        Store = result2.recordsets[0][0];
+        let result3 = await pool.request().query(query3)
+        let result4 = await pool.request().query(query4)
+        Store = result1.recordsets[0][0];
+        Ward = result2.recordsets[0][0];
+        District = result3.recordsets[0][0];
+        Province = result4.recordsets[0][0];
     } catch (err) {
 
     }
 
-    const addressFirst = `${Delivery.AddressDetail} ${Delivery.WardName} ${Delivery.DistrictName} ${Delivery.ProvinceName}`;
-    const addressSecond = `${Store.AddressDetail} ${Store.WardName} ${Store.DistrictName} ${Store.ProvinceName}`;
+    const addressFirst = `${Store.AddressDetail} ${Store.WardName} ${Store.DistrictName} ${Store.ProvinceName}`;
+    const addressSecond = `${Reciever.AddressDetail} ${Ward.WardName} ${District.DistrictName} ${Province.ProvinceName}`;
 
     const getDistance = async () => {
         const data = {
-            addressFirst : addressFirst,
+            addressFirst: addressFirst,
             addressSecond: addressSecond
         }
         try {
@@ -53,11 +53,11 @@ const getFeeShip = async (DeliveryId, StoreId) => {
     const distance = distanceOBJ.data.travelDistance;
 
     var feeDistance = 0;
-    if ( distance <= 5) {
+    if (distance <= 5) {
         feeDistance += 10;
-    } else if (distance <= 10 ) {
+    } else if (distance <= 10) {
         feeDistance += 20;
-    } else if (distance <= 25 ) {
+    } else if (distance <= 25) {
         feeDistance += 25;
     } else if (distance <= 100) {
         feeDistance += 30;
@@ -66,31 +66,35 @@ const getFeeShip = async (DeliveryId, StoreId) => {
     }
 
     var feeSize = 0;
-    if (Delivery.GoodSize === 'M') {
-        feeSize += 5;
-    } else if (Delivery.GoodSize === 'L') {
+    if (Reciever.GoodSize === 'M') {
         feeSize += 10;
-    } else if (Delivery.GoodSize === 'XL') {
+    } else if (Reciever.GoodSize === 'L') {
         feeSize += 15;
+    } else if (Reciever.GoodSize === 'XL') {
+        feeSize += 20;
+    } else if (Reciever.GoodSize === 'S') {
+        feeSize += 5;
     }
 
     var feeWeight = 0;
-    if (Delivery.GoodWeight === 'M') {
-        feeWeight += 5;
-    } else if (Delivery.GoodWeight === 'L') {
+    if (Reciever.GoodWeight === 'M') {
         feeWeight += 10;
-    } else if (Delivery.GoodWeight === 'XL') {
+    } else if (Reciever.GoodWeight === 'L') {
         feeWeight += 15;
+    } else if (Reciever.GoodWeight === 'XL') {
+        feeWeight += 20;
+    } else if (Reciever.GoodWeight === 'S') {
+        feeWeight += 5;
     }
 
     var feeShip = 0;
 
-    if (Delivery.ShipType === 'Giao hàng nhanh') {
+    if (Reciever.ShipType === 'Giao hàng nhanh') {
         feeShip = feeShip + feeDistance + feeSize + feeWeight + 10;
     } else {
         feeShip = feeShip + feeDistance + feeSize + feeWeight;
     }
-    return feeShip;
+    return feeShip * 1000;
 
 }
 

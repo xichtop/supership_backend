@@ -5,6 +5,8 @@ const verifyToken = require('../middleware/verifyToken');
 
 router.use('/getall', verifyToken, FeeShipController.getAll);
 
+router.use('/getallbystaff', verifyToken, FeeShipController.getAllByStaff);
+
 router.use('/getallbystore/:storeId', verifyToken, FeeShipController.getAllByStore);
 
 router.use('/payfeemanager', verifyToken, FeeShipController.PayFeeManager);
