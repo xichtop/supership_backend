@@ -69,6 +69,10 @@ class CoordinationController {
                          Values('${DeliveryId}', '${StaffId}', getDate(), 'Da tiep nhan', 'NK001')`;
             listQuery.push(deliveryQuery);
             listQuery.push(coordinationQuery);
+        } else if (Status === 'Returning') {
+            coordinationQuery = `Update Return_Deliveries SET StaffId3 = '${StaffId}', Status = 'Dang roi kho', DeliveryDate = getDate() 
+                         Where DeliveryId = '${DeliveryId}'`;
+            listQuery.push(coordinationQuery);
         } else {
             coordinationQuery = `Update Coordinations SET StaffId2 = '${StaffId}', Status = 'Dang roi kho', DeliveryDate2 = getDate() 
                          Where DeliveryId = '${DeliveryId}'`;

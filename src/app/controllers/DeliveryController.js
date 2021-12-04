@@ -476,6 +476,69 @@ class DeliveryController {
         }
     }
 
+
+    async getStandardShipBack(req, res) {
+        const staffId = req.params.staffId;
+        var query = `select Deliveries.*, Provinces.ProvinceName, Districts.DistrictName, Wards.WardName from Return_Deliveries 
+                    Left Join Deliveries 
+                    On Return_Deliveries.DeliveryId = Deliveries.DeliveryId
+                    Left Join Provinces 
+                    On Provinces.ProvinceCode = Deliveries.ProvinceCode
+                    Left Join Districts 
+                    On Districts.DistrictCode = Deliveries.DistrictCode
+                    Left Join Wards 
+                    On Wards.WardCode = Deliveries.WardCode
+                    where Return_Deliveries.Status = 'da ve kho'`;
+        var query2 = `select DistrictCode from ShipAreas where StaffId = '${staffId}'`;
+        var query3 = `select Stores.StoreId, Stores.DistrictCode as StoreDistrictCode, Stores.StoreName, Stores.Phone as StorePhone, Stores.AddressDetail as StoreAddress, 
+                    Provinces.ProvinceName as ProvinceNameStore, Districts.DistrictName as DistrictNameStore, Wards.WardName as WardNameStore
+                    from Stores
+                    Left Join Provinces 
+                    On Provinces.ProvinceCode = Stores.ProvinceCode
+                    Left Join Districts 
+                    On Districts.DistrictCode = Stores.DistrictCode
+                    Left Join Wards 
+                    On Wards.WardCode = Stores.WardCode`;
+        var deliveries, shipareas, stores = [];
+        try {
+            let pool = await sql.connect(config)
+            let result1 = await pool.request()
+                .query(query)
+            let result2 = await pool.request()
+                .query(query2)
+            let result3 = await pool.request()
+                .query(query3)
+            deliveries = result1.recordsets[0];
+            shipareas = result2.recordsets[0];
+            stores = result3.recordsets[0];
+        } catch (err) {
+            console.log(err);
+        }
+        const districttemps = [];
+        shipareas.forEach(district => {
+            districttemps.push(district.DistrictCode);
+        })
+        function checkDistrict(delivery) {
+            const store = stores.find(item => item.StoreId === delivery.StoreId);
+            return districttemps.includes(store.StoreDistrictCode);
+        }
+        const deliveriesTemp1 = deliveries.filter(checkDistrict);
+        if (deliveriesTemp1.length === 0) {
+            res.json([]);
+        } else {
+            const temp = [];
+            deliveriesTemp1.map(delivery => {
+                const StoreCurrent = stores.find(store => store.StoreId === delivery.StoreId);
+                const item = {
+                    ...delivery,
+                    ...StoreCurrent
+                }
+                temp.push(item);
+            })
+            res.json(temp);
+        }
+    }
+
 }
 
 module.exports = new DeliveryController();

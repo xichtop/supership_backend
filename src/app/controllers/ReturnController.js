@@ -12,7 +12,7 @@ class ReturnController {
         if (Status === 'Fast') {
             query1 = `Insert Into Return_Deliveries (DeliveryId, Reason, Status) Values ( '${DeliveryId}', N'${Reason}', 'Dang tra hang')`;
         } else {
-            query1 = `Insert Into Return_Deliveries (DeliveryId, Reason, Status) Values ( '${DeliveryId}', N'${Reason}', 'Dang ve kho')`;
+            query1 = `Insert Into Return_Deliveries (DeliveryId, Reason, Status, WareHouseId) Values ( '${DeliveryId}', N'${Reason}', 'Dang ve kho', 'NK001')`;
         }
         const query2 = `Update Deliveries Set Status = 'Returning' Where DeliveryId = '${DeliveryId}'`;
         const query3 = `Update Coordinations Set Status = 'Dang tra hang' Where DeliveryId = '${DeliveryId}'`;

@@ -26,6 +26,8 @@ router.use('/getstandardshiporder/:staffId', verifyToken, DeliveryController.get
 
 router.use('/getstandardshipdeliver/:staffId', verifyToken, DeliveryController.getStandardShipDeliver);
 
+router.use('/getstandardshipback/:staffId', verifyToken, DeliveryController.getStandardShipBack);
+
 router.use('/', verifyToken, DeliveryController.index);
 
 
