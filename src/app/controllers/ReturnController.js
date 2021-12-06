@@ -60,9 +60,15 @@ class ReturnController {
         const query2 = `Update Return_Deliveries Set Status = 'Da tra hang' Where DeliveryId = '${DeliveryId}'`;
         const query3 = `Update Coordinations Set Status = 'Da tra hang' Where DeliveryId = '${DeliveryId}'`;
 
+        var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
+
+        var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+
         listQuery.push(query1);
         listQuery.push(query2);
         listQuery.push(query3);
+        listQuery.push(paymentQuery);
+        listQuery.push(feePaymentQuery);
 
         const pool = new sql.ConnectionPool(config)
         pool.connect(err => {

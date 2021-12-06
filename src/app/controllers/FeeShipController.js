@@ -219,13 +219,13 @@ class FeeShipController {
     //Cửa hàng lấy danh sách phí ship
     async getAllByStore(req, res) {
         const StoreId = req.params.storeId
-        const query1 = `Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Deliveries.FeeShip, Coordinations.DeliveryDate2 as ShipDate, FeeShip_Payments.StoreId as StorePay, FeeShip_Payments.Money2
+        const query1 = `Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Deliveries.FeeShip, Coordinations.DeliveryDate as ShipDate, FeeShip_Payments.StoreId as StaffId, FeeShip_Payments.Money2
                         From Deliveries
                         Left Join Coordinations
                         On Deliveries.DeliveryId = Coordinations.DeliveryId
                         Left Join FeeShip_Payments
                         On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId
-                        Where Deliveries.Status = 'Delivered' and Deliveries.StoreId = '${StoreId}'
+                        Where (Deliveries.Status = 'Delivered' Or Deliveries.Status = 'Returned') and Deliveries.StoreId = '${StoreId}'
                         Order By Deliveries.OrderDate DESC`;
         var deliveries = [];
         try {
@@ -239,7 +239,7 @@ class FeeShipController {
         let temp = [];
         for (let i = 0; i < deliveries.length; i++) {
 
-            if (deliveries[i].StorePay === null) {
+            if (deliveries[i].StaffId === null) {
                 temp.push({
                     DeliveryId: deliveries[i].DeliveryId,
                     OrderDate: deliveries[i].OrderDate,
@@ -262,48 +262,138 @@ class FeeShipController {
 
     //Shipper lấy danh sách phí ship
     async getAllByStaff(req, res) {
-        
-        const {FirstDate, LastDate, StaffId } = req.body;
 
-        const query1 = `Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Coordinations.DeliveryDate2 as ShipDate, FeeShip_Payments.StoreId as StorePay, FeeShip_Payments.Money2
-                        From Deliveries
-                        Left Join Coordinations
-                        On Deliveries.DeliveryId = Coordinations.DeliveryId
-                        Left Join FeeShip_Payments
-                        On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId
-                        Where Deliveries.Status = 'Delivered' and Deliveries.StoreId = '${StoreId}'
-                        Order By Deliveries.OrderDate DESC`;
-        var deliveries = [];
+        const { StaffId, LastDate, FirstDate } = req.body;
+
+        console.log(req.body)
+
+        const query1 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, FeeShip_Payments.StaffId from 
+                        (   Select DeliveryId, DeliveryDate 
+                            from Coordinations 
+                            Where StaffId1 = '${StaffId}' 
+                            and (Status = 'Da giao hang' Or Status = 'Da tra hang')
+                            and DeliveryDate <= '${LastDate}' and DeliveryDate >= '${FirstDate}'
+                            ) Coor
+                        Left Join Deliveries On Deliveries.DeliveryId = Coor.DeliveryId
+                        Left Join FeeShip_Payments On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId`;
+        const query2 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, FeeShip_Payments.StaffId from 
+                        (   Select DeliveryId, DeliveryDate 
+                            from Coordinations 
+                            Where StaffId2 = '${StaffId}' 
+                            and (Status = 'Da giao hang' Or Status = 'Da tra hang')
+                            and DeliveryDate <= '${LastDate}' and DeliveryDate >= '${FirstDate}'
+                            ) Coor
+                        Left Join Deliveries On Deliveries.DeliveryId = Coor.DeliveryId
+                        Left Join FeeShip_Payments On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId`;
+        const query3 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, FeeShip_Payments.StaffId from 
+                        (   Select DeliveryId, DeliveryDate 
+                            from Return_Deliveries 
+                            Where StaffId3 = '${StaffId}' and Status = 'Da tra hang'
+                            and DeliveryDate <= '${LastDate}' and DeliveryDate >= '${FirstDate}'
+                            ) Coor
+                        Left Join Deliveries On Deliveries.DeliveryId = Coor.DeliveryId
+                        Left Join FeeShip_Payments On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId`;
+        var deliveries1, deliveries2, deliveries3 = [];
         try {
             let pool = await sql.connect(config)
             let result1 = await pool.request()
                 .query(query1)
-            deliveries = result1.recordsets[0];
+            let result2 = await pool.request()
+                .query(query2)
+            let result3 = await pool.request()
+                .query(query3)
+            deliveries1 = result1.recordsets[0];
+            deliveries2 = result2.recordsets[0];
+            deliveries3 = result3.recordsets[0];
         } catch (err) {
             console.log(err);
         }
         let temp = [];
-        for (let i = 0; i < deliveries.length; i++) {
+        for (let i = 0; i < deliveries1.length; i++) {
 
-            if (deliveries[i].StorePay === null) {
+            let fee = 0;
+            if (deliveries1[i].ShipType === 'Giao hàng nhanh') {
+                fee = deliveries1[i].FeeShip * 15 / 100
+            } else {
+                fee = deliveries1[i].FeeShip * 10 / 100
+            }
+
+            if (deliveries1[i].StaffId === null) {
                 temp.push({
-                    DeliveryId: deliveries[i].DeliveryId,
-                    OrderDate: deliveries[i].OrderDate,
-                    DeliveryDate: deliveries[i].ShipDate,
-                    FeeShip: deliveries[i].FeeShip,
+                    DeliveryId: deliveries1[i].DeliveryId,
+                    Type: 'Lấy hàng',
+                    DeliveryDate: deliveries1[i].DeliveryDate,
+                    FeeShip: fee,
                     Status: 'Chưa thanh toán'
                 })
             } else {
                 temp.push({
-                    DeliveryId: deliveries[i].DeliveryId,
-                    OrderDate: deliveries[i].OrderDate,
-                    DeliveryDate: deliveries[i].ShipDate,
-                    FeeShip: deliveries[i].FeeShip,
+                    DeliveryId: deliveries1[i].DeliveryId,
+                    Type: 'Lấy hàng',
+                    DeliveryDate: deliveries1[i].DeliveryDate,
+                    FeeShip: fee,
+                    Status: 'Đã thanh toán'
+                })
+            }
+        }
+
+        for (let i = 0; i < deliveries2.length; i++) {
+
+            let fee = 0;
+            if (deliveries2[i].ShipType === 'Giao hàng nhanh') {
+                fee = deliveries2[i].FeeShip * 15 / 100
+            } else {
+                fee = deliveries2[i].FeeShip * 10 / 100
+            }
+
+            if (deliveries2[i].StaffId === null) {
+                temp.push({
+                    DeliveryId: deliveries2[i].DeliveryId,
+                    Type: 'Giao hàng',
+                    DeliveryDate: deliveries2[i].DeliveryDate,
+                    FeeShip: fee,
+                    Status: 'Chưa thanh toán'
+                })
+            } else {
+                temp.push({
+                    DeliveryId: deliveries2[i].DeliveryId,
+                    Type: 'Giao hàng',
+                    DeliveryDate: deliveries2[i].DeliveryDate,
+                    FeeShip: fee,
+                    Status: 'Đã thanh toán'
+                })
+            }
+        }
+
+        for (let i = 0; i < deliveries3.length; i++) {
+
+            let fee = 0;
+            if (deliveries3[i].ShipType === 'Giao hàng nhanh') {
+                fee = deliveries3[i].FeeShip * 15 / 100
+            } else {
+                fee = deliveries3[i].FeeShip * 10 / 100
+            }
+
+            if (deliveries3[i].StaffId === null) {
+                temp.push({
+                    DeliveryId: deliveries3[i].DeliveryId,
+                    Type: 'Trả hàng',
+                    DeliveryDate: deliveries3[i].DeliveryDate,
+                    FeeShip: fee,
+                    Status: 'Chưa thanh toán'
+                })
+            } else {
+                temp.push({
+                    DeliveryId: deliveries3[i].DeliveryId,
+                    Type: 'Trả hàng',
+                    DeliveryDate: deliveries3[i].DeliveryDate,
+                    FeeShip: fee,
                     Status: 'Đã thanh toán'
                 })
             }
         }
         res.json(temp);
+        console.log(temp);
     }
 }
 
