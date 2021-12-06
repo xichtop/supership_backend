@@ -9,7 +9,13 @@ router.use('/getallmain/', verifyToken, WareController.getAllMain);
 //láy danh sách chờ xác nhận
 router.use('/getall', verifyToken, WareController.getAll);
 
+//láy danh sách trả hàng chờ xác nhận
+router.use('/getallreturn', verifyToken, WareController.getAllReturn);
+
 //xác nhận đơn hàng
 router.use('/update', verifyToken, WareController.update);
+
+//xác nhận đơn trả hàng
+router.use('/updatereturn', verifyToken, WareController.updateReturn);
 
 module.exports = router;

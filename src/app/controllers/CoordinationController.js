@@ -161,7 +161,7 @@ class CoordinationController {
     //chuyển trnajg thái đã giao hàng cho đơn giao hàng tiêu chuẩn
     async updateStandardItem(req, res) {
         const { DeliveryId, StaffId, Status } = req.body;
-        var coordinationQuery, deliveryQuery = '';
+        var coordinationQuery, deliveryQuery, returnQuery = '';
         var listQuery = [];
         if (Status === 'Order') {
             coordinationQuery = `Update Coordinations Set Status = 'Dang ve kho' Where StaffId1 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
@@ -170,13 +170,24 @@ class CoordinationController {
             listQuery.push(coordinationQuery);
             listQuery.push(paymentQuery);
             listQuery.push(feePaymentQuery);
-        } else {
+        } else if (Status === 'Deliver') {
             deliveryQuery = `Update Deliveries Set Status = 'Delivered' Where DeliveryId = '${DeliveryId}'`;
             coordinationQuery = `Update Coordinations Set Status = 'Da giao hang' Where StaffId2 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
             var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
             var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
             listQuery.push(deliveryQuery);
             listQuery.push(coordinationQuery);
+            listQuery.push(paymentQuery);
+            listQuery.push(feePaymentQuery);
+        } else {
+            deliveryQuery = `Update Deliveries Set Status = 'Returned' Where DeliveryId = '${DeliveryId}'`;
+            coordinationQuery = `Update Coordinations Set Status = 'Da tra hang' Where DeliveryId = '${DeliveryId}'`;
+            returnQuery = `Update Return_Deliveries Set Status = 'Da tra hang' Where DeliveryId = '${DeliveryId}'`;
+            var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
+            var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+            listQuery.push(deliveryQuery);
+            listQuery.push(coordinationQuery);
+            listQuery.push(returnQuery);
             listQuery.push(paymentQuery);
             listQuery.push(feePaymentQuery);
         }
@@ -281,10 +292,16 @@ class CoordinationController {
                 where StaffId1 = '${staffId}' and  WareHouseId IS NOT NULL ) Coor
                 Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
                 Order By DeliveryDate DESC`;
-        } else {
+        } else if (status === 'Deliver') {
             query = `Select Deliveries.*, Coor.DeliveryDate2 as DeliveryDate, Coor.Status as StatusDetail from ( 
                 Select DeliveryId, DeliveryDate2, Status from Coordinations 
                 where StaffId2 = '${staffId}') Coor
+                Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
+                Order By DeliveryDate DESC`;
+        } else {
+            query = `Select Deliveries.*, Coor.DeliveryDate as DeliveryDate, Coor.Status as StatusDetail from ( 
+                Select DeliveryId, DeliveryDate, Status from Return_Deliveries 
+                where StaffId3 = '${staffId}') Coor
                 Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
                 Order By DeliveryDate DESC`;
         }
