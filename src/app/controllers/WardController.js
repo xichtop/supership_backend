@@ -1,6 +1,5 @@
 var sql = require("mssql");
 var config = require("../config/config");
-var getFee = require('../utils/getFeeShip');
 
 
 class WardController {
@@ -31,14 +30,6 @@ class WardController {
         }
     }
 
-    async getFeeShip (req, res) {
-        const { DeliveryId, StoreId } = req.body;
-        const fee = await getFee(DeliveryId, StoreId);
-        res.json({ 
-            fee: fee,
-        })
-
-    }
 }
 
 module.exports = new WardController();

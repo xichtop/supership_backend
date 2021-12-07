@@ -11,6 +11,7 @@ const wareRouter = require('./ware');
 const coordinationRouter = require('./coordinations');
 const feeshipRouter = require('./feeship');
 const returnsRouter = require('./returns');
+const adminRouter = require('./admin');
 
 function route(app) {
     app.use('/stores/', storesRouter);
@@ -26,6 +27,7 @@ function route(app) {
     app.use('/ware/', wareRouter);
     app.use('/feeship/', feeshipRouter);
     app.use('/returns/', returnsRouter);
+    app.use('/admin/', adminRouter);
 }
 
 module.exports = route;
