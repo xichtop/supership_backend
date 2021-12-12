@@ -12,7 +12,7 @@ class ReturnController {
         if (Status === 'Fast') {
             query1 = `Insert Into Return_Deliveries (DeliveryId, Reason, Status) Values ( '${DeliveryId}', N'${Reason}', 'Dang tra hang')`;
         } else {
-            query1 = `Insert Into Return_Deliveries (DeliveryId, Reason, Status, WareHouseId) Values ( '${DeliveryId}', N'${Reason}', 'Dang ve kho', 'NK001')`;
+            query1 = `Insert Into Return_Deliveries (DeliveryId, Reason, Status) Values ( '${DeliveryId}', N'${Reason}', 'Dang ve kho')`;
         }
         const query2 = `Update Deliveries Set Status = 'Returning' Where DeliveryId = '${DeliveryId}'`;
         const query3 = `Update Coordinations Set Status = 'Dang tra hang' Where DeliveryId = '${DeliveryId}'`;
@@ -62,13 +62,13 @@ class ReturnController {
 
         var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
 
-        var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+        // var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments 
 
         listQuery.push(query1);
         listQuery.push(query2);
         listQuery.push(query3);
         listQuery.push(paymentQuery);
-        listQuery.push(feePaymentQuery);
+        // listQuery.push(feePaymentQuery);
 
         const pool = new sql.ConnectionPool(config)
         pool.connect(err => {

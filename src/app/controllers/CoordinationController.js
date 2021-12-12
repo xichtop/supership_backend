@@ -121,13 +121,13 @@ class CoordinationController {
 
         var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
 
-        var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+        // var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
 
         var listQuery = [];
         listQuery.push(deliveryQuery);
         listQuery.push(coordinationQuery);
         listQuery.push(paymentQuery);
-        listQuery.push(feePaymentQuery);
+        // listQuery.push(feePaymentQuery);
         const pool = new sql.ConnectionPool(config)
         pool.connect(err => {
             if (err) console.log(err)
@@ -165,31 +165,31 @@ class CoordinationController {
         var listQuery = [];
         if (Status === 'Order') {
             coordinationQuery = `Update Coordinations Set Status = 'Dang ve kho' Where StaffId1 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
-            var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
-            var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+            // var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
+            // var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
             listQuery.push(coordinationQuery);
-            listQuery.push(paymentQuery);
-            listQuery.push(feePaymentQuery);
+            // listQuery.push(paymentQuery);
+            // listQuery.push(feePaymentQuery);
         } else if (Status === 'Deliver') {
             deliveryQuery = `Update Deliveries Set Status = 'Delivered' Where DeliveryId = '${DeliveryId}'`;
             coordinationQuery = `Update Coordinations Set Status = 'Da giao hang' Where StaffId2 = '${StaffId}' and DeliveryId = '${DeliveryId}'`;
             var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
-            var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+            // var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
             listQuery.push(deliveryQuery);
             listQuery.push(coordinationQuery);
             listQuery.push(paymentQuery);
-            listQuery.push(feePaymentQuery);
+            // listQuery.push(feePaymentQuery);
         } else {
             deliveryQuery = `Update Deliveries Set Status = 'Returned' Where DeliveryId = '${DeliveryId}'`;
             coordinationQuery = `Update Coordinations Set Status = 'Da tra hang' Where DeliveryId = '${DeliveryId}'`;
             returnQuery = `Update Return_Deliveries Set Status = 'Da tra hang' Where DeliveryId = '${DeliveryId}'`;
             var paymentQuery = `Insert Into Payments(DeliveryId) Values('${DeliveryId}')`; //payments
-            var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
+            // var feePaymentQuery = `Insert Into FeeShip_Payments(DeliveryId) Values('${DeliveryId}')`; //Feepayments
             listQuery.push(deliveryQuery);
             listQuery.push(coordinationQuery);
             listQuery.push(returnQuery);
             listQuery.push(paymentQuery);
-            listQuery.push(feePaymentQuery);
+            // listQuery.push(feePaymentQuery);
         }
         const pool = new sql.ConnectionPool(config)
         pool.connect(err => {

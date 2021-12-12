@@ -7,13 +7,13 @@ class FeeShipController {
 
     // Admin lấy danh sách phí ship của hệ thống
     async getAll(req, res) {
-        const query1 = `Select Deliveries.StoreId, Deliveries.OrderDate, Deliveries.ShipType, Deliveries.FeeShip, Coordinations.*, FeeShip_Payments.StaffId, FeeShip_Payments.Money1
+        const query1 = `Select Deliveries.StoreId, Deliveries.OrderDate, Deliveries.ShipType, Deliveries.FeeShip, Coordinations.*, Payments.StaffId2 as Admin
                         From Deliveries
                         Left Join Coordinations
                         On Deliveries.DeliveryId = Coordinations.DeliveryId
-                        Left Join FeeShip_Payments
-                        On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId
-                        Where Deliveries.Status = 'Delivered'
+                        Left Join Payments
+                        On Deliveries.DeliveryId = Payments.DeliveryId
+                        Where Deliveries.Status = 'Delivered' Or Deliveries.Status = 'Returned'
                         Order By Deliveries.OrderDate DESC`;
         var deliveries = [];
         try {
@@ -29,7 +29,7 @@ class FeeShipController {
         for (let i = 0; i < deliveries.length; i++) {
 
             if (deliveries[i].ShipType === 'Giao hàng nhanh') {
-                if (deliveries[i].StaffId === null) {
+                if (deliveries[i].Admin === null) {
                     temp.push({
                         Index: index,
                         DeliveryId: deliveries[i].DeliveryId,
@@ -55,7 +55,7 @@ class FeeShipController {
                     index++;
                 }
             } else {
-                if (deliveries[i].StaffId === null) {
+                if (deliveries[i].Admin === null) {
                     temp.push({
                         Index: index,
                         DeliveryId: deliveries[i].DeliveryId,
@@ -110,7 +110,7 @@ class FeeShipController {
     //Quản lí thanh toán Feeship cho shipper theo đơn hàng
     async PayFeeManagerByDeliver(req, res) {
         const { DeliveryId, StaffId, Money } = req.body;
-        const query = `Update FeeShip_Payments Set StaffId = '${StaffId}', Money1 = '${Money}', PayDate1 = getDate() Where DeliveryId = '${DeliveryId}'`;
+        const query = `Update Payments Set StaffId2 = '${StaffId}',  PayStaffDate2 = getDate() Where DeliveryId = '${DeliveryId}'`;
         var status = 0;
         try {
             let pool = await sql.connect(config)
@@ -140,7 +140,7 @@ class FeeShipController {
                 } else {
                     Money = delivery.FeeShip * 20 / 100;
                 }
-                var query = `Update FeeShip_Payments Set StaffId = '${StaffId}', Money1 = '${Money}', PayDate1 = getDate() Where DeliveryId = '${delivery.DeliveryId}'`;
+                var query = `Update Payments Set StaffId2 = '${StaffId}', PayStaffDate2 = getDate() Where DeliveryId = '${delivery.DeliveryId}'`;
                 listQuery.push(query);
             }
         })
@@ -181,7 +181,7 @@ class FeeShipController {
         var listQuery = [];
         Deliveries.forEach(delivery => {
             if (delivery.Status !== ' Đã thanh toán') {
-                var query = `Update FeeShip_Payments Set StoreId = '${StoreId}', PayDate2 = getDate(), Money2 = '${delivery.Money}' 
+                var query = `Update Payments Set PayDate2 = getDate()
                 Where DeliveryId = '${delivery.DeliveryId}'`;
                 listQuery.push(query);
             }
@@ -219,14 +219,15 @@ class FeeShipController {
     //Cửa hàng lấy danh sách phí ship
     async getAllByStore(req, res) {
         const StoreId = req.params.storeId
-        const query1 = `Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Deliveries.FeeShip, Coordinations.DeliveryDate as ShipDate, FeeShip_Payments.StoreId as StaffId, FeeShip_Payments.Money2
-                        From Deliveries
+        const query1 = `Select Deliver.*, Coordinations.DeliveryDate as ShipDate, Payments.PayDate2  
+                        from ( Select Deliveries.DeliveryId, Deliveries.StoreId, Deliveries.OrderDate, Deliveries.FeeShip
+                            From Deliveries
+                            Where (Deliveries.Status = 'Delivered' Or Deliveries.Status = 'Returned') and Deliveries.StoreId = '${StoreId}' ) Deliver
                         Left Join Coordinations
-                        On Deliveries.DeliveryId = Coordinations.DeliveryId
-                        Left Join FeeShip_Payments
-                        On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId
-                        Where (Deliveries.Status = 'Delivered' Or Deliveries.Status = 'Returned') and Deliveries.StoreId = '${StoreId}'
-                        Order By Deliveries.OrderDate DESC`;
+                        On Deliver.DeliveryId = Coordinations.DeliveryId
+                        Left Join Payments
+                        On Deliver.DeliveryId = Payments.DeliveryId
+                        Order By Deliver.OrderDate DESC`;
         var deliveries = [];
         try {
             let pool = await sql.connect(config)
@@ -239,7 +240,7 @@ class FeeShipController {
         let temp = [];
         for (let i = 0; i < deliveries.length; i++) {
 
-            if (deliveries[i].StaffId === null) {
+            if (deliveries[i].PayDate2 === null) {
                 temp.push({
                     DeliveryId: deliveries[i].DeliveryId,
                     OrderDate: deliveries[i].OrderDate,
@@ -265,9 +266,7 @@ class FeeShipController {
 
         const { StaffId, LastDate, FirstDate } = req.body;
 
-        console.log(req.body)
-
-        const query1 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, FeeShip_Payments.StaffId from 
+        const query1 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, Payments.StaffId2 as Admin from 
                         (   Select DeliveryId, DeliveryDate 
                             from Coordinations 
                             Where StaffId1 = '${StaffId}' 
@@ -275,8 +274,8 @@ class FeeShipController {
                             and DeliveryDate <= '${LastDate}' and DeliveryDate >= '${FirstDate}'
                             ) Coor
                         Left Join Deliveries On Deliveries.DeliveryId = Coor.DeliveryId
-                        Left Join FeeShip_Payments On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId`;
-        const query2 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, FeeShip_Payments.StaffId from 
+                        Left Join Payments On Deliveries.DeliveryId = Payments.DeliveryId`;
+        const query2 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, Payments.StaffId2 as Admin from 
                         (   Select DeliveryId, DeliveryDate 
                             from Coordinations 
                             Where StaffId2 = '${StaffId}' 
@@ -284,15 +283,15 @@ class FeeShipController {
                             and DeliveryDate <= '${LastDate}' and DeliveryDate >= '${FirstDate}'
                             ) Coor
                         Left Join Deliveries On Deliveries.DeliveryId = Coor.DeliveryId
-                        Left Join FeeShip_Payments On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId`;
-        const query3 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, FeeShip_Payments.StaffId from 
+                        Left Join Payments On Deliveries.DeliveryId = Payments.DeliveryId`;
+        const query3 = `select Coor.*, Deliveries.FeeShip, Deliveries.ShipType, Payments.StaffId2 as Admin from 
                         (   Select DeliveryId, DeliveryDate 
                             from Return_Deliveries 
                             Where StaffId3 = '${StaffId}' and Status = 'Da tra hang'
                             and DeliveryDate <= '${LastDate}' and DeliveryDate >= '${FirstDate}'
                             ) Coor
                         Left Join Deliveries On Deliveries.DeliveryId = Coor.DeliveryId
-                        Left Join FeeShip_Payments On Deliveries.DeliveryId = FeeShip_Payments.DeliveryId`;
+                        Left Join Payments On Deliveries.DeliveryId = Payments.DeliveryId`;
         var deliveries1, deliveries2, deliveries3 = [];
         try {
             let pool = await sql.connect(config)
@@ -318,7 +317,7 @@ class FeeShipController {
                 fee = deliveries1[i].FeeShip * 10 / 100
             }
 
-            if (deliveries1[i].StaffId === null) {
+            if (deliveries1[i].Admin === null) {
                 temp.push({
                     DeliveryId: deliveries1[i].DeliveryId,
                     Type: 'Lấy hàng',
@@ -346,7 +345,7 @@ class FeeShipController {
                 fee = deliveries2[i].FeeShip * 10 / 100
             }
 
-            if (deliveries2[i].StaffId === null) {
+            if (deliveries2[i].Admin === null) {
                 temp.push({
                     DeliveryId: deliveries2[i].DeliveryId,
                     Type: 'Giao hàng',
@@ -374,7 +373,7 @@ class FeeShipController {
                 fee = deliveries3[i].FeeShip * 10 / 100
             }
 
-            if (deliveries3[i].StaffId === null) {
+            if (deliveries3[i].Admin === null) {
                 temp.push({
                     DeliveryId: deliveries3[i].DeliveryId,
                     Type: 'Trả hàng',
@@ -393,7 +392,6 @@ class FeeShipController {
             }
         }
         res.json(temp);
-        console.log(temp);
     }
 }
 

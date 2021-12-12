@@ -20,20 +20,18 @@ class PaymentController {
     // lấy danh sách tiền COD của cửa hàng 
     async statistic(req, res) {
         const { FirstDate, LastDate, StoreId } = req.body;
-        var query1 = `select * from Deliveries 
-                      where OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}' and StoreId = '${StoreId}' and Status = 'Delivered'
-                      Order By OrderDate DESC`;
-        var query2 = `select * from Payments`;
+        var query1 = `select Deliver.*, Payments.StaffId1 
+                      from ( select * from Deliveries 
+                             where OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}' and StoreId = '${StoreId}' and Status = 'Delivered'
+                            ) Deliver
+                      Left Join Payments On Deliver.DeliveryId = Payments.DeliveryId
+                      Order By Deliver.OrderDate DESC`;
         var deliveries = [];
-        var payments = [];
         try {
             let pool = await sql.connect(config)
             let result1 = await pool.request()
                 .query(query1)
-            let result2 = await pool.request()
-                .query(query2)
             deliveries = result1.recordsets[0];
-            payments = result2.recordsets[0];
         } catch (err) {
             console.log(err);
         }
@@ -48,8 +46,7 @@ class PaymentController {
                     Status: 'Đã thanh toán'
                 })
             } else {
-                const index = payments.findIndex(pay => pay.DeliveryId === delivery.DeliveryId);
-                if (index !== -1 && payments[index].StaffId2 !== null) {
+                if (delivery.StaffId1 !== null) {
                     temp.push({
                         DeliveryId: delivery.DeliveryId,
                         Phone: delivery.RecieverPhone,
@@ -74,22 +71,18 @@ class PaymentController {
     // lấy danh sách tiền COD các đơn giao hàng nhanh của Shipper
     async getShipperPaymentFastList(req, res) {
         const { StaffId } = req.body;
-        var query1 = `Select Deliveries.*, Coor.DeliveryDate from (
+        var query1 =    `Select Deliveries.*, Coor.DeliveryDate, Payments.PayDate1 from (
                         Select DeliveryId, DeliveryDate from Coordinations 
                         where StaffId1 = '${StaffId}' and  WareHouseId IS NULL and Status = 'Da giao hang' ) Coor
-                    Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
-                    Order By DeliveryDate DESC`;
-        var query2 = `select * from Payments`;
+                        Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
+                        Left Join Payments On Coor.DeliveryId = Payments.DeliveryId
+                        Order By DeliveryDate DESC`;
         var deliveries = [];
-        var payments = [];
         try {
             let pool = await sql.connect(config)
             let result1 = await pool.request()
                 .query(query1)
-            let result2 = await pool.request()
-                .query(query2)
             deliveries = result1.recordsets[0];
-            payments = result2.recordsets[0];
         } catch (err) {
             console.log(err);
         }
@@ -104,8 +97,7 @@ class PaymentController {
                     Status: 'Đã thanh toán'
                 })
             } else {
-                const index = payments.findIndex(pay => pay.DeliveryId === delivery.DeliveryId);
-                if (index !== -1 && payments[index].StaffId1 !== null) {
+                if (delivery.PayDate1 !== null) {
                     temp.push({
                         DeliveryId: delivery.DeliveryId,
                         OrderDate: delivery.OrderDate,
@@ -130,22 +122,18 @@ class PaymentController {
     // lấy danh sách tiền COD các đơn giao hàng TC của Shipper
     async getShipperPaymentStandardList(req, res) {
         const { StaffId } = req.body;
-        var query1 = `Select Deliveries.*, Coor.DeliveryDate from (
+        var query1 = `Select Deliveries.*, Coor.DeliveryDate, Payments.PayDate1 from (
                         Select DeliveryId, DeliveryDate from Coordinations 
                         where StaffId2 = '${StaffId}' and  WareHouseId IS NOT NULL and Status = 'Da giao hang' ) Coor
-                    Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
-                    Order By DeliveryDate DESC`;
-        var query2 = `select * from Payments`;
+                        Left Join Deliveries On Coor.DeliveryId = Deliveries.DeliveryId
+                        Left Join Payments On Coor.DeliveryId = Payments.DeliveryId
+                        Order By DeliveryDate DESC`;
         var deliveries = [];
-        var payments = [];
         try {
             let pool = await sql.connect(config)
             let result1 = await pool.request()
                 .query(query1)
-            let result2 = await pool.request()
-                .query(query2)
             deliveries = result1.recordsets[0];
-            payments = result2.recordsets[0];
         } catch (err) {
             console.log(err);
         }
@@ -160,8 +148,7 @@ class PaymentController {
                     Status: 'Đã thanh toán'
                 })
             } else {
-                const index = payments.findIndex(pay => pay.DeliveryId === delivery.DeliveryId);
-                if (index !== -1 && payments[index].StaffId1 !== null) {
+                if (delivery.PayDate1 !== null) {
                     temp.push({
                         DeliveryId: delivery.DeliveryId,
                         OrderDate: delivery.OrderDate,
@@ -185,11 +172,11 @@ class PaymentController {
 
     //Shipper thanh toán tiền COD cho hệ thống
     async PayCODShipper(req, res) {
-        const { Deliveries, StaffId } = req.body;
+        const { Deliveries } = req.body;
         var listQuery = [];
         Deliveries.forEach(delivery => {
             if (delivery.Status !== ' Đã thanh toán') {
-                var query = `Update Payments Set StaffId1 = '${StaffId}', PayDate1 = getDate() Where DeliveryId = '${delivery.DeliveryId}'`;
+                var query = `Update Payments Set PayDate1 = getDate() Where DeliveryId = '${delivery.DeliveryId}'`;
                 listQuery.push(query);
             }
         })
@@ -230,7 +217,7 @@ class PaymentController {
         var listQuery = [];
         Deliveries.forEach(delivery => {
             if (delivery.Status !== ' Đã thanh toán') {
-                var query = `Update Payments Set StaffId2 = '${StaffId}', PayDate2 = getDate() Where DeliveryId = '${delivery.DeliveryId}'`;
+                var query = `Update Payments Set StaffId1 = '${StaffId}', PayStaffDate1 = getDate() Where DeliveryId = '${delivery.DeliveryId}'`;
                 listQuery.push(query);
             }
         })
@@ -267,7 +254,7 @@ class PaymentController {
     //Quản lí thanh toán COD cho cửa hàng theo đơn hàng
     async PayCODManagerByDeliver(req, res) {
         const { DeliveryId, StaffId } = req.body;
-        const query = `Update Payments Set StaffId2 = '${StaffId}', PayDate2 = getDate() Where DeliveryId = '${DeliveryId}'`;
+        const query = `Update Payments Set StaffId1 = '${StaffId}', PayStaffDate1 = getDate() Where DeliveryId = '${DeliveryId}'`;
         var status = 0;
         try {
             let pool = await sql.connect(config)
@@ -287,24 +274,20 @@ class PaymentController {
 
     // lấy danh sách tiền COD của tất cả cửa hàng
     async getAllCOD(req, res) {
-        const query1 = `Select Deliveries.*, Stores.StoreName,
+        const query1 = `Select Deliveries.*, Stores.StoreName, Payments.StaffId1,
                         Banks.AccountBank, Banks.FullName, Banks.BankName, Banks.BankBranch 
                         from Deliveries
                         Left Join Stores on Stores.StoreId = Deliveries.StoreId
                         Left Join Banks on Stores.AccountBank = Banks.AccountBank
+                        Left Join Payments on Deliveries.DeliveryId = Payments.DeliveryId
                         Where Deliveries.Status = 'Delivered'
                         Order By Deliveries.OrderDate DESC`;
-        var query2 = `select * from Payments`;
         var deliveries = [];
-        var payments = [];
         try {
             let pool = await sql.connect(config)
             let result1 = await pool.request()
                 .query(query1)
-            let result2 = await pool.request()
-                .query(query2)
             deliveries = result1.recordsets[0];
-            payments = result2.recordsets[0];
         } catch (err) {
             console.log(err);
         }
@@ -317,8 +300,7 @@ class PaymentController {
                     Status: 'Đã thanh toán'
                 })
             } else {
-                const index = payments.findIndex(pay => pay.DeliveryId === deliveries[i].DeliveryId);
-                if (index !== -1 && payments[index].StaffId2 !== null) {
+                if (deliveries[i].StaffId1 !== null) {
                     temp.push({
                         ...deliveries[i],
                         Status: 'Đã thanh toán'
