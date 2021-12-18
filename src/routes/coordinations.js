@@ -15,6 +15,8 @@ router.use('/getstandardship/:staffId/:status', verifyToken, CoordinationControl
 
 router.use('/getfastship/:staffId', verifyToken, CoordinationController.getFastShip);
 
+router.use('/getbyid/:deliveryid', verifyToken, CoordinationController.getById);
+
 router.use('/', CoordinationController.index);
 
 module.exports = router;

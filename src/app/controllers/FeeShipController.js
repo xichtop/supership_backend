@@ -7,10 +7,13 @@ class FeeShipController {
 
     // Admin lấy danh sách phí ship của hệ thống
     async getAll(req, res) {
-        const query1 = `Select Deliveries.StoreId, Deliveries.OrderDate, Deliveries.ShipType, Deliveries.FeeShip, Coordinations.*, Payments.StaffId2 as Admin
+        const query1 = `Select Deliveries.StoreId, Deliveries.OrderDate, Deliveries.ShipType, Deliveries.FeeShip, 
+                        Coordinations.*, Payments.StaffId2 as Admin, Return_Deliveries.StaffId3 as StaffId5
                         From Deliveries
                         Left Join Coordinations
                         On Deliveries.DeliveryId = Coordinations.DeliveryId
+                        Left Join Return_Deliveries
+                        On Deliveries.DeliveryId = Return_Deliveries.DeliveryId
                         Left Join Payments
                         On Deliveries.DeliveryId = Payments.DeliveryId
                         Where Deliveries.Status = 'Delivered' Or Deliveries.Status = 'Returned'
@@ -26,6 +29,7 @@ class FeeShipController {
         }
         let temp = [];
         var index = 0;
+        console.log(deliveries);
         for (let i = 0; i < deliveries.length; i++) {
 
             if (deliveries[i].ShipType === 'Giao hàng nhanh') {
@@ -78,6 +82,19 @@ class FeeShipController {
                         Status: 'Chưa thanh toán'
                     })
                     index++;
+                    if (deliveries[i].Status === 'Da tra hang') {
+                        temp.push({
+                            Index: index,
+                            DeliveryId: deliveries[i].DeliveryId,
+                            OrderDate: deliveries[i].OrderDate,
+                            ShipType: 'Giao hàng tiêu chuẩn',
+                            StaffId: deliveries[i].StaffId5,
+                            FeeShip: deliveries[i].FeeShip,
+                            FeePay: (deliveries[i].FeeShip) * 10 / 100,
+                            Status: 'Chưa thanh toán'
+                        })
+                        index++;
+                    }
                 } else {
                     temp.push({
                         Index: index,
@@ -101,6 +118,19 @@ class FeeShipController {
                         Status: 'Đã thanh toán'
                     })
                     index++;
+                    if (deliveries[i].Status === 'Da tra hang') {
+                        temp.push({
+                            Index: index,
+                            DeliveryId: deliveries[i].DeliveryId,
+                            OrderDate: deliveries[i].OrderDate,
+                            ShipType: 'Giao hàng tiêu chuẩn',
+                            StaffId: deliveries[i].StaffId5,
+                            FeeShip: deliveries[i].FeeShip,
+                            FeePay: (deliveries[i].FeeShip) * 10 / 100,
+                            Status: 'Đã thanh toán'
+                        })
+                        index++;
+                    }
                 }
             }
         }

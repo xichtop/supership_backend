@@ -7,9 +7,9 @@ router.use('/login', ShipperController.login);
 
 router.use('/updatestatus', verifyToken, ShipperController.updateStatus);
 
-// router.use('/check/:username', ShipperController.check);
+router.use('/check/:username', ShipperController.check);
 
-// router.use('/additem', ShipperController.addItem);
+router.use('/additem', ShipperController.addItem);
 
 router.use('/', verifyToken, ShipperController.index);
 

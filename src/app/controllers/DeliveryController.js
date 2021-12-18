@@ -26,7 +26,27 @@ class DeliveryController {
     }
 
     async getById(req, res) {
-        var query = `select * from Deliveries where DeliveryId = ${req.params.deliveryId}`;
+        var query = ` Select Deliver.*, Provinces.ProvinceName, Districts.DistrictName, Wards.WardName from
+                    ( select Top 1 * from Deliveries where DeliveryId = ${req.params.deliveryId} ) Deliver 
+                    Left Join Provinces On Deliver.ProvinceCode = Provinces.ProvinceCode
+                    Left Join Districts On Deliver.DistrictCode = Districts.DistrictCode
+                    Left Join Wards On Deliver.WardCode = Wards.WardCode`;
+        var delivery = {};
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            delivery = result.recordsets[0][0]
+
+        } catch (err) {
+
+        }
+        res.json(delivery);
+    }
+
+    // Lấy đơn hàng chi tiết dành cho shipper
+    async checkByIdStoreCancel(req, res) {
+        var query = `select Top 1 * from Deliveries where DeliveryId = ${req.params.deliveryId} `;
         var delivery = {};
         try {
             let pool = await sql.connect(config)
@@ -36,34 +56,30 @@ class DeliveryController {
         } catch (err) {
 
         }
-
-        var query2 = `select WardName from Wards where WardCode = '${delivery.WardCode}'`;
-        var query3 = `select DistrictName from Districts where DistrictCode = '${delivery.DistrictCode}'`;
-        var query4 = `select ProvinceName from Provinces where ProvinceCode = '${delivery.ProvinceCode}'`;
-        var WardName, DistrictName, ProvinceName = '';
-        try {
-            let pool = await sql.connect(config)
-            let result1 = await pool.request().query(query2)
-            let result2 = await pool.request().query(query3)
-            let result3 = await pool.request().query(query4)
-            WardName = result1.recordsets[0][0].WardName;
-            DistrictName = result2.recordsets[0][0].DistrictName;
-            ProvinceName = result3.recordsets[0][0].ProvinceName;
-        } catch (err) {
-
+        if (delivery.Status === 'Ordered') {
+            res.send({ successful: true, message: 'Chưa tiếp nhận!', status: delivery.Status });
         }
-        const newDelivery = {
-            ...delivery,
-            WardName
-            , DistrictName,
-            ProvinceName
+        else {
+            res.send({ successful: false, message: 'Đã tiếp nhận!', status: delivery.Status });
         }
-        res.json(newDelivery);
     }
 
     // Lấy đơn hàng chi tiết dành cho shipper
     async getByIdShipper(req, res) {
-        var query = `select * from Deliveries where DeliveryId = ${req.params.deliveryId}`;
+
+        var query = `Select Temp.*, Provinces.ProvinceName as ProvinceNameStore, Districts.DistrictName as DistrictNameStore, Wards.WardName as WardNameStore
+                    from ( Select Delivery.*, Stores.StoreName, Stores.Phone as StorePhone, Stores.AddressDetail as StoreAddress,
+                            Stores.ProvinceCode as ProvinceStore, Stores.DistrictCode as DistrictStore, Stores.WardCode as WardStore
+                            from ( Select Deliver.*, Provinces.ProvinceName, Districts.DistrictName, Wards.WardName 
+                                from ( select Top 1 * from Deliveries where DeliveryId = ${req.params.deliveryId} ) Deliver 
+                                    Left Join Provinces On Deliver.ProvinceCode = Provinces.ProvinceCode
+                                    Left Join Districts On Deliver.DistrictCode = Districts.DistrictCode
+                                    Left Join Wards On Deliver.WardCode = Wards.WardCode ) Delivery
+                                Left Join Stores On Stores.StoreId = Delivery.StoreId ) Temp
+                    Left Join Provinces On Temp.ProvinceStore = Provinces.ProvinceCode
+                    Left Join Districts On Temp.DistrictStore = Districts.DistrictCode
+                    Left Join Wards On Temp.WardStore = Wards.WardCode`;
+
         var delivery = {};
         try {
             let pool = await sql.connect(config)
@@ -73,55 +89,7 @@ class DeliveryController {
         } catch (err) {
 
         }
-
-        var query2 = `select WardName from Wards where WardCode = '${delivery.WardCode}'`;
-        var query3 = `select DistrictName from Districts where DistrictCode = '${delivery.DistrictCode}'`;
-        var query4 = `select ProvinceName from Provinces where ProvinceCode = '${delivery.ProvinceCode}'`;
-        var query5 = `select * From Stores Where StoreId = '${delivery.StoreId}'`;
-        var WardName, DistrictName, ProvinceName = '';
-        var store = {};
-        try {
-            let pool = await sql.connect(config)
-            let result1 = await pool.request().query(query2)
-            let result2 = await pool.request().query(query3)
-            let result3 = await pool.request().query(query4)
-            let result4 = await pool.request().query(query5)
-            WardName = result1.recordsets[0][0].WardName;
-            DistrictName = result2.recordsets[0][0].DistrictName;
-            ProvinceName = result3.recordsets[0][0].ProvinceName;
-            store = result4.recordsets[0][0];
-        } catch (err) {
-
-        }
-
-        var WardNameStore, ProvinceNameStore, DistrictNameStore = '';
-        var query6 = `select WardName from Wards where WardCode = '${store.WardCode}'`;
-        var query7 = `select DistrictName from Districts where DistrictCode = '${store.DistrictCode}'`;
-        var query8 = `select ProvinceName from Provinces where ProvinceCode = '${store.ProvinceCode}'`;
-        try {
-            let pool = await sql.connect(config)
-            let result1 = await pool.request().query(query6)
-            let result2 = await pool.request().query(query7)
-            let result3 = await pool.request().query(query8)
-            WardNameStore = result1.recordsets[0][0].WardName;
-            ProvinceNameStore = result2.recordsets[0][0].DistrictName;
-            DistrictNameStore = result3.recordsets[0][0].ProvinceName;
-        } catch (err) {
-
-        }
-        const newDelivery = {
-            ...delivery,
-            WardName
-            , DistrictName,
-            ProvinceName,
-            WardNameStore,
-            ProvinceNameStore,
-            DistrictNameStore,
-            StoreName: store.StoreName,
-            StorePhone: store.Phone,
-            StoreAddress: store.AddressDetail,
-        }
-        res.json(newDelivery);
+        res.json(delivery);
     }
 
     async getByStore(req, res) {
@@ -137,41 +105,25 @@ class DeliveryController {
     }
 
     async getByStoreandStatus(req, res) {
-        var query1 = `select * from Deliveries where StoreId = '${req.params.storeId}' and Status = '${req.params.status}' Order by OrderDate DESC`;
-        var query2 = `select * from Provinces`;
-        var query3 = `select * from Districts`;
-        var query4 = `select * from Wards`;
-        var deliveries, provinces, districts, wards, temp = [];
+        var query1 = `Select Deliver.*, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName 
+                     from ( select * from Deliveries where StoreId = '${req.params.storeId}' and Status = '${req.params.status}' ) Deliver
+                     Left Join Provinces 
+                     on Deliver.ProvinceCode = Provinces.ProvinceCode
+                     Left Join Districts 
+                     on Deliver.DistrictCode = Districts.DistrictCode
+                     Left Join Wards 
+                     on Deliver.WardCode = Wards.WardCode 
+                     Order by Deliver.OrderDate DESC`;
+        var deliveries = [];
         try {
             let pool = await sql.connect(config)
             let result1 = await pool.request()
                 .query(query1)
-            let result2 = await pool.request()
-                .query(query2)
-            let result3 = await pool.request()
-                .query(query3)
-            let result4 = await pool.request()
-                .query(query4)
             deliveries = result1.recordsets[0];
-            provinces = result2.recordsets[0];
-            districts = result3.recordsets[0];
-            wards = result4.recordsets[0];
         } catch (err) {
 
         }
-        deliveries.map(delivery => {
-            const Province = provinces.find(province => province.ProvinceCode === delivery.ProvinceCode);
-            const District = districts.find(district => district.DistrictCode === delivery.DistrictCode);
-            const Ward = wards.find(ward => ward.WardCode === delivery.WardCode);
-            const item = {
-                ...delivery,
-                WardName: Ward.WardName,
-                ProvinceName: Province.ProvinceName,
-                DistrictName: District.DistrictName,
-            }
-            temp.push(item);
-        })
-        res.json(temp);
+        res.json(deliveries);
     }
 
     async statistic(req, res) {
