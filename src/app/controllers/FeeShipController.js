@@ -29,7 +29,6 @@ class FeeShipController {
         }
         let temp = [];
         var index = 0;
-        console.log(deliveries);
         for (let i = 0; i < deliveries.length; i++) {
 
             if (deliveries[i].ShipType === 'Giao hàng nhanh') {
@@ -422,6 +421,128 @@ class FeeShipController {
             }
         }
         res.json(temp);
+    }
+
+
+    // admin get config
+    async getConfig(req, res) {
+        const query1 = 'select * from GoodSizes where StartDate <= getDate() and EndDate IS NULL';
+        const query2 = 'Select * from GoodWeights where StartDate <= getDate() and EndDate IS NULL';
+        const query3 = 'Select * from Configs where StartDate <= getDate() and EndDate IS NULL';
+        var sizes = [];
+        var weights = [];
+        var distances = [];
+        try {
+            let pool = await sql.connect(config)
+            let result1 = await pool.request()
+                .query(query1)
+            let result2 = await pool.request()
+                .query(query2)
+            let result3 = await pool.request()
+                .query(query3)
+            sizes = result1.recordsets[0];
+            weights = result2.recordsets[0];
+            distances = result3.recordsets[0];
+        } catch (err) {
+            console.log(err);
+        }
+
+        res.json([
+            {
+                size1: sizes.find(s => s.GoodSizeId === 'S').Money,
+                size2: sizes.find(s => s.GoodSizeId === 'M').Money,
+                size3: sizes.find(s => s.GoodSizeId === 'L').Money,
+                size4: sizes.find(s => s.GoodSizeId === 'XL').Money,
+                weight1: weights.find(s => s.GoodWeightId === 'S').Money,
+                weight2: weights.find(s => s.GoodWeightId === 'M').Money,
+                weight3: weights.find(s => s.GoodWeightId === 'L').Money,
+                weight4: weights.find(s => s.GoodWeightId === 'XL').Money,
+                distance1: distances[1].Money,
+                distance2: distances[2].Money,
+                distance3: distances[3].Money,
+                distance4: distances[4].Money,
+                type: distances[0].Money,
+            },
+            {
+                date1: sizes[0].StartDate,
+                date2: weights[0].StartDate,
+                date3: distances[1].StartDate,
+                date4: distances[0].StartDate,
+            }
+        ])
+    }
+
+    async updateConfig(req, res) {
+        const { sizes, weights, distances, dates, type } = req.body;
+
+        var listQuery = [];
+
+        console.log(dates);
+
+        const temp = ['S', 'M', 'L', 'XL'];
+        const sizeDes = ['0 - 30*30*30 Cm', '30*30*30 - 50*50*50 Cm', '50*50*50 - 70*70*70 Cm', 'Lớn hơn 70*70*70 Cm'];
+        const temp2 = [5, 10, 25, 100];
+        const weightDes = ['Bé hơn 1 Kg', 'Từ 1 đến 3 Kg', 'Từ 3 đến 5 Kg', 'Lớn hơn 5 Kg'];
+
+        const query = `Update Configs Set EndDate = '${dates[3].slice(0,10)}' Where ConfigId = 0 and EndDate IS NULL`;
+        const query2 = `Insert Into Configs (ConfigId, Money, StartDate)
+                            Values ( 0, ${type}, '${dates[3].slice(0,10)}')`;
+        listQuery.push(query)
+        listQuery.push(query2)
+
+        sizes.map((size, index) => {
+            const query = `Update GoodSizes Set EndDate = '${dates[0].slice(0,10)}' Where GoodSizeId = '${temp[index]}' and EndDate IS NULL`;
+            const query2 = `Insert Into GoodSizes (GoodSizeId, Description, Money, StartDate)
+                            Values ('${temp[index]}', N'${sizeDes[index]}', ${size}, '${dates[0].slice(0,10)}')`;
+            listQuery.push(query)
+            listQuery.push(query2)
+        })
+
+        weights.map((weight, index) => {
+            const query = `Update GoodWeights Set EndDate = '${dates[1].slice(0,10)}' Where GoodWeightId = '${temp[index]}' and EndDate IS NULL`;
+            const query2 = `Insert Into GoodWeights (GoodWeightId, Description, Money, StartDate)
+                            Values ('${temp[index]}', N'${weightDes[index]}', ${weight}, '${dates[1].slice(0,10)}')`;
+            listQuery.push(query)
+            listQuery.push(query2)
+        })
+
+        distances.map((dis, index) => {
+            const query = `Update Configs Set EndDate = '${dates[2].slice(0,10)}' Where ConfigId = ${temp2[index]} and EndDate IS NULL`;
+            const query2 = `Insert Into Configs (ConfigId, Money, StartDate)
+                            Values ( ${temp2[index]}, ${dis}, '${dates[2].slice(0,10)}')`;
+            listQuery.push(query)
+            listQuery.push(query2)
+        })
+
+
+        const pool = new sql.ConnectionPool(config)
+        pool.connect(err => {
+            if (err) console.log(err)
+            const transaction = new sql.Transaction(pool)
+            const request = new sql.Request(transaction)
+            transaction.begin(err => {
+                if (err) return console.log(err)
+                async.eachSeries(listQuery, function (query, callback) {
+                    request.query(query, (err, result) => {
+                        if (err) {
+                            callback(err)
+                        } else {
+                            callback()
+                        }
+                    })
+                }, function (err) {
+                    if (err) {
+                        transaction.rollback()
+                        res.json({ successful: false, message: "Đã xảy ra lỗi!" });
+                        console.log(err)
+                    } else {
+                        console.log('success!')
+                        res.json({ successful: true, message: "Thành công!" });
+                        transaction.commit()
+                    }
+                })
+            })
+        })
     }
 }
 

@@ -18,4 +18,7 @@ router.use('/update', verifyToken, WareController.update);
 //xác nhận đơn trả hàng
 router.use('/updatereturn', verifyToken, WareController.updateReturn);
 
+//lấy danh sách nhà kho
+router.use('/', verifyToken, WareController.get);
+
 module.exports = router;

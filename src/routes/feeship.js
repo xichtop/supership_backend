@@ -3,6 +3,10 @@ const router = express.Router();
 const FeeShipController = require('../app/controllers/FeeShipController');
 const verifyToken = require('../middleware/verifyToken');
 
+router.use('/getconfig', verifyToken, FeeShipController.getConfig);
+
+router.use('/updateconfig', verifyToken, FeeShipController.updateConfig);
+
 router.use('/getall', verifyToken, FeeShipController.getAll);
 
 router.use('/getallbystaff', verifyToken, FeeShipController.getAllByStaff);

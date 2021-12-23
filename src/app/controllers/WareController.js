@@ -6,6 +6,18 @@ var md5 = require('md5');
 
 class WareController {
 
+    async get(req, res) {
+        var query = `select * from WareHouses`;
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            res.json(result.recordsets[0]);
+        } catch (err) {
+
+        }
+    }
+
     async getAll(req, res) {
         var query = '';
         query = `Select Deliveries.*, Coor.Status as StatusDetail, Wards.WardName, Districts.DistrictName, Provinces.ProvinceName 

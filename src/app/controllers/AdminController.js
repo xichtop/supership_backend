@@ -7,20 +7,19 @@ class AdminController {
     async statistic(req, res) {
 
         const { FirstDate, LastDate } = req.body;
-
         var query1 = `select Count(*) as Count from Deliveries Where Status = 'Delivered' 
-                    and OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}'`;
+                    and OrderDate <= '${LastDate.slice(0, 10)}' and OrderDate >= '${FirstDate.slice(0, 10)}'`;
         var query2 = `select Count(*) as Count from Deliveries Where Status = 'Returned'
-                    and OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}'`;
+                    and OrderDate <= '${LastDate.slice(0, 10)}' and OrderDate >= '${FirstDate.slice(0, 10)}'`;
         var query3 = `select Sum(FeeShip) as FeeShip from Deliveries Where ( Status = 'Delivered' Or Status = 'Returned')
-                    and OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}'`;
+                    and OrderDate <= '${LastDate.slice(0, 10)}' and OrderDate >= '${FirstDate.slice(0, 10)}'`;
         var query4 = `select Sum(COD) as COD from Deliveries Where Status = 'Delivered'
-                    and OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}'`;
+                    and OrderDate <= '${LastDate.slice(0, 10)}' and OrderDate >= '${FirstDate.slice(0, 10)}'`;
         var query5 = `select Status, Count(*) as Quantity from Deliveries 
-                    Where OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}'
+                    Where OrderDate <= '${LastDate.slice(0, 10)}' and OrderDate >= '${FirstDate.slice(0, 10)}'
                     Group By Status`;
         var query6 = `select OrderDate, FeeShip as Fee, COD, Status from Deliveries 
-                    Where OrderDate <= '${LastDate}' and OrderDate >= '${FirstDate}' and ( Status = 'Delivered' Or Status = 'Returned')`;
+                    Where OrderDate <= '${LastDate.slice(0, 10)}' and OrderDate >= '${FirstDate.slice(0, 10)}' and ( Status = 'Delivered' Or Status = 'Returned')`;
         var delivery, returned, fee, cod, deliveries, fees = {};
         try {
             let pool = await sql.connect(config)
@@ -50,8 +49,6 @@ class AdminController {
         for (let i = 0; i < fees.length; i++) {
             let dem = 0;
             for (let j = i; j < fees.length; j++) {
-                console.log(typeof fees[i].OrderDate)
-                console.log(fees[i].OrderDate.toISOString())
                 if (fees[i].OrderDate.toISOString().slice(0, 10) === fees[j].OrderDate.toISOString().slice(0, 10)) {
                     dem++;
                 }
@@ -91,10 +88,10 @@ class AdminController {
         })
 
         res.json({
-            delivery: delivery[0].Count,
-            returned: returned[0].Count,
-            fee: fee[0].FeeShip,
-            cod: cod[0].COD,
+            delivery: delivery[0].Count === 0 ? 0 : delivery[0].Count,
+            returned: returned[0].Count  === 0 ? 0 : returned[0].Count,
+            fee: fee[0].FeeShip  === null ? 0 : fee[0].FeeShip,
+            cod: cod[0].COD  === null ? 0 : cod[0].COD,
             deliveries: deliveries,
             fees: temp1
         })

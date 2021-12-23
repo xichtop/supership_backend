@@ -5,7 +5,7 @@ const verifyToken = require('../middleware/verifyToken');
 
 // store 
 
-router.use('/add', verifyToken, DeliveryController.addItem);
+router.use('/add', DeliveryController.addItem);
 
 router.use('/getbystore/:storeId/:status', verifyToken, DeliveryController.getByStoreandStatus);
 

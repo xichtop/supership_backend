@@ -204,7 +204,7 @@ class DeliveryController {
     //lấy danh sách các đơn hàng nhanh có trung khu vực của shipper
     async getFastShip(req, res) {
         const staffId = req.params.staffId;
-        var query = `select * from Deliveries where Status = 'Ordered' and ShipType = N'Giao hàng nhanh'`;
+        var query = `select * from Deliveries where Status = 'Ordered' and ShipType = N'Giao hàng nhanh' Order By OrderDate DESC`;
         var query2 = `select * from Provinces`;
         var query3 = `select * from Districts`;
         var query4 = `select * from Wards`;
@@ -271,7 +271,7 @@ class DeliveryController {
     // lấy danh sách tất cả các đơn hàng tiếu chuẩn đang chờ lấy hàng có trong khu vực đã đăng kí của shipper
     async getStandardShipOrder(req, res) {
         const staffId = req.params.staffId;
-        var query = `select * from Deliveries where Status = 'Ordered' and ShipType = N'Giao hàng tiêu chuẩn'`;
+        var query = `select * from Deliveries where Status = 'Ordered' and ShipType = N'Giao hàng tiêu chuẩn' Order By OrderDate DESC`;
         var query2 = `select * from Provinces`;
         var query3 = `select * from Districts`;
         var query4 = `select * from Wards`;

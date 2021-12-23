@@ -31,6 +31,30 @@ class StoreController {
         }
     }
 
+    async getSizes(req, res) {
+        var query = `Select * from GoodSizes`;
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            res.json(result.recordsets[0]);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async getWeights(req, res) {
+        var query = `Select * from GoodWeights`;
+        try {
+            let pool = await sql.connect(config)
+            let result = await pool.request()
+                .query(query)
+            res.json(result.recordsets[0]);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     async check(req, res) {
         var query = `select * from Accounts where Username = '${req.params.username}'`;
         try {
@@ -104,9 +128,6 @@ class StoreController {
 
     async addItem(req, res) {
         const { store, bank, identity } = req.body;
-        // console.log('bank', bank);
-        // console.log('store', store);
-        // console.log('identity', identity);
         var queryTop = `select top(1) StoreId from Stores order by StoreId DESC`;
         var StoreId = '';
         try {
